@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>中秋词图对对碰</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: "楷体", "STKaiti", serif;
+        }
+        
+        body {
+            background: linear-gradient(to bottom, #0c1b33, #1a3658);
+            color: #fff;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 20px;
+            width: 100%;
+        }
+        
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 0 0 10px #ff9d00;
+            color: #ffcc00;
+        }
+        
+        /* 游戏主容器改为垂直布局，设置面板放底部 */
+        .game-container {
+            width: 100%;
+            max-width: 1200px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        /* 游戏面板：两行卡片间距等于卡片高度（130px） */
+        .game-board {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            column-gap: 10px; /* 水平间距保持10px */
+            row-gap: 130px; /* 行间距 = 卡片高度（130px） */
+            max-width: 420px; /* 适配3张卡片宽度 */
+            width: 100%;
+            margin: 0 auto 30px; /* 底部留间距，与下方设置面板分隔 */
+        }
+        
+        .card {
+            width: 130px;
+            height: 130px; /* 卡片高度130px，与行间距一致 */
+            perspective: 1000px;
+            cursor: pointer;
+        }
+        
+        .card-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            text-align: center;
+            transition: transform 0.6s;
+            transform-style: preserve-3d;
+        }
+        
+        .card.flipped .card-inner {
+            transform: rotateY(180deg);
+        }
+        
+        .card.matched .card-inner {
+            transform: rotateY(180deg);
+            box-shadow: 0 0 15px #ffcc00;
+        }
+        
+        .card-front, .card-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            font-weight: bold;
+            overflow: hidden;
+        }
+        
+        .card-front {
+            background: linear-gradient(135deg, #ff9d00, #ff6b00);
+            color: #fff;
+        }
+        
+        .card-back {
+            background-color: #fff;
+            color: #333;
+            transform: rotateY(180deg);
+            padding: 10px;
+        }
+        
+        .card-back img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+        
+        .card-back.word {
+            background: linear-gradient(135deg, #4a90e2, #2c5aa0);
+            color: white;
+	    font-size:500px；
+        }
+        
+        /* 设置面板移至底部，宽度适配屏幕 */
+        .settings-panel {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 20px;
+            width: 100%;
+            max-width: 800px; /* 底部设置面板宽度更宽，方便操作 */
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            margin-top: 20px;
+        }
+        
+        .settings-group {
+            margin-bottom: 20px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px; /* 选项组内元素间距 */
+        }
+        
+        .settings-group h3 {
+            width: 100%; /* 标题占满一行 */
+            margin-bottom: 10px;
+            color: #ffcc00;
+            border-bottom: 1px solid #ffcc00;
+            padding-bottom: 5px;
+        }
+        
+        .settings-group > div {
+            flex: 1;
+            min-width: 200px; /* 确保选项不会太窄 */
+        }
+        
+        label {
+            display: block;
+            margin: 8px 0 5px;
+            font-size: 14px;
+        }
+        
+        input, select {
+            width: 100%;
+            padding: 8px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            background: rgba(255, 255, 255, 0.9);
+        }
+        
+        button {
+            background: linear-gradient(to right, #ff9d00, #ff6b00);
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-top: 10px;
+            width: 100%;
+            transition: all 0.3s;
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 10px rgba(255, 157, 0, 0.4);
+        }
+        
+        .instructions {
+            margin-top: 20px;
+            text-align: center;
+            max-width: 800px;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 15px;
+            border-radius: 10px;
+        }
+        
+        .instructions h3 {
+            color: #ffcc00;
+            margin-bottom: 10px;
+        }
+        
+        .instructions p {
+            margin-bottom: 8px;
+            line-height: 1.5;
+        }
+        
+        .moon {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 80px;
+            height: 80px;
+            background: radial-gradient(circle at 30px 30px, #ffedb3, #ffcc00);
+            border-radius: 50%;
+            box-shadow: 0 0 20px #ffcc00;
+            animation: float 3s ease-in-out infinite;
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+        
+        .cloud {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            z-index: -1;
+        }
+        
+        .cloud:nth-child(1) {
+            width: 100px;
+            height: 40px;
+            top: 10%;
+            left: 5%;
+            animation: drift 20s linear infinite;
+        }
+        
+        .cloud:nth-child(2) {
+            width: 150px;
+            height: 60px;
+            top: 25%;
+            right: 10%;
+            animation: drift 25s linear infinite reverse;
+        }
+        
+        @keyframes drift {
+            0% { transform: translateX(-100px); }
+            100% { transform: translateX(calc(100vw + 100px)); }
+        }
+        
+        .message {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.8);
+            padding: 20px 40px;
+            border-radius: 10px;
+            text-align: center;
+            z-index: 100;
+            display: none;
+            box-shadow: 0 0 20px #ffcc00;
+        }
+        
+        .message.show {
+            display: block;
+            animation: pop 0.5s;
+        }
+        
+        @keyframes pop {
+            0% { transform: translate(-50%, -50%) scale(0.5); opacity: 0; }
+            100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+        }
+        
+        .score {
+            font-size: 1.2rem;
+            margin: 10px 0;
+            color: #ffcc00;
+        }
+    </style>
+</head>
+<body>
+    <div class="moon"></div>
+    <div class="cloud"></div>
+    <div class="cloud"></div>
+    
+    <header>
+        <h1>中秋词图对对碰</h1>
+        <p>翻出相同的词语和图片进行配对，体验中秋乐趣！</p>
+        <div class="score">已匹配: <span id="matches">0</span>/3</div>
+    </header>
+    
+    <div class="game-container">
+        <!-- 游戏卡片区域 -->
+        <div class="game-board" id="gameBoard">
+            <!-- 卡片将通过JavaScript动态生成 -->
+        </div>
+        
+        <!-- 设置面板移至底部 -->
+        <div class="settings-panel">
+            <div class="settings-group">
+                <h3>词语设置</h3>
+                <div>
+                    <label for="word1">词语 1:</label>
+                    <input type="text" id="word1" value="中秋节">
+                </div>
+                <div>
+                    <label for="word2">词语 2:</label>
+                    <input type="text" id="word2" value="月饼">
+                </div>
+                <div>
+                    <label for="word3">词语 3:</label>
+                    <input type="text" id="word3" value="月亮">
+                </div>
+            </div>
+            
+            <div class="settings-group">
+                <h3>音频设置</h3>
+                <div>
+                    <label for="bgMusic">背景音乐:</label>
+                    <input type="file" id="bgMusic" accept="audio/*">
+                </div>
+                <div>
+                    <label for="successSound">成功提示音:</label>
+                    <input type="file" id="successSound" accept="audio/*">
+                </div>
+                <div>
+                    <label for="matchSound">匹配成功音效:</label>
+                    <input type="file" id="matchSound" accept="audio/*">
+                </div>
+                <div>
+                    <label for="wordAudio1">词语1语音:</label>
+                    <input type="file" id="wordAudio1" accept="audio/*">
+                </div>
+                <div>
+                    <label for="wordAudio2">词语2语音:</label>
+                    <input type="file" id="wordAudio2" accept="audio/*">
+                </div>
+                <div>
+                    <label for="wordAudio3">词语3语音:</label>
+                    <input type="file" id="wordAudio3" accept="audio/*">
+                </div>
+            </div>
+            
+            <div class="settings-group">
+                <h3>图片设置</h3>
+                <div>
+                    <label for="image1">图片 1:</label>
+                    <input type="file" id="image1" accept="image/*">
+                </div>
+                <div>
+                    <label for="image2">图片 2:</label>
+                    <input type="file" id="image2" accept="image/*">
+                </div>
+                <div>
+                    <label for="image3">图片 3:</label>
+                    <input type="file" id="image3" accept="image/*">
+                </div>
+            </div>
+            
+            <div style="display: flex; gap: 10px;">
+                <button id="applySettings" style="flex: 1;">应用设置</button>
+                <button id="resetGame" style="flex: 1;">重新开始游戏</button>
+            </div>
+        </div>
+    </div>
+    
+    <div class="instructions">
+        <h3>游戏说明</h3>
+        <p>1. 点击卡片翻开，寻找词语和对应图片的匹配</p>
+        <p>2. 每成功匹配一对，会播放对应词语的读音和匹配音效</p>
+        <p>3. 匹配错误时，卡片会缓慢翻转回去</p>
+        <p>4. 教师可以通过下方面板自定义词语、图片和音频</p>
+    </div>
+    
+    <div class="message" id="successMessage">
+        <h2>恭喜！全部匹配成功！</h2>
+        <p>中秋快乐！</p>
+    </div>
+    <script>
+        // 游戏状态
+        let gameState = {
+            cards: [],
+            flippedCards: [],
+            matchedPairs: 0,
+            totalPairs: 3,
+            canFlip: true
+        };
+        // 默认配置
+       let gameConfig = {
+    		words: ['中秋节', '月饼', '月亮'], // 原词语不变，与图片一一对应
+   		images: [
+       			'中秋节.jpg', // 替换为"中秋节"对应图片路径
+        		'月饼.jpg',   // 替换为"月饼"对应图片路径
+        		'月亮.jpg'    // 替换为"月亮"对应图片路径
+    ],
+    wordAudios: [],
+    bgMusic: null,
+    successSound: null,
+    matchSound: null
+};
+        // 初始化游戏
+        function initGame() {
+            const gameBoard = document.getElementById('gameBoard');
+            gameBoard.innerHTML = '';
+            gameState.cards = [];
+            gameState.flippedCards = [];
+            gameState.matchedPairs = 0;
+            gameState.canFlip = true;
+            document.getElementById('matches').textContent = '0';
+            
+            // 创建卡片数据
+            let cardData = [];
+            for (let i = 0; i < gameConfig.words.length; i++) {
+                // 词语卡片
+                cardData.push({
+                    id: i * 2,
+                    type: 'word',
+                    content: gameConfig.words[i],
+                    pairId: i
+                });
+                
+                // 图片卡片
+                cardData.push({
+                    id: i * 2 + 1,
+                    type: 'image',
+                    content: gameConfig.images[i],
+                    pairId: i
+                });
+            }
+            
+            // 洗牌算法
+            cardData.sort(() => Math.random() - 0.5);
+            
+            // 创建卡片元素
+            cardData.forEach(card => {
+                const cardElement = document.createElement('div');
+                cardElement.className = 'card';
+                cardElement.dataset.id = card.id;
+                cardElement.dataset.pairId = card.pairId;
+                
+                const cardInner = document.createElement('div');
+                cardInner.className = 'card-inner';
+                
+                const cardFront = document.createElement('div');
+                cardFront.className = 'card-front';
+                cardFront.textContent = '?';
+                
+                const cardBack = document.createElement('div');
+                cardBack.className = `card-back ${card.type}`;
+                
+                if (card.type === 'word') {
+                    cardBack.textContent = card.content;
+                } else {
+                    const img = document.createElement('img');
+                    img.src = card.content;
+                    img.alt = card.content;
+                    cardBack.appendChild(img);
+                }
+                
+                cardInner.appendChild(cardFront);
+                cardInner.appendChild(cardBack);
+                cardElement.appendChild(cardInner);
+                
+                cardElement.addEventListener('click', () => flipCard(cardElement));
+                gameBoard.appendChild(cardElement);
+                
+                gameState.cards.push({
+                    element: cardElement,
+                    id: card.id,
+                    pairId: card.pairId,
+                    type: card.type,
+                    isFlipped: false,
+                    isMatched: false
+                });
+            });
+        }
+        // 翻转卡片
+        function flipCard(cardElement) {
+            if (!gameState.canFlip) return;
+            
+            const card = gameState.cards.find(c => c.element === cardElement);
+            if (!card || card.isFlipped || card.isMatched) return;
+            
+            // 翻转卡片
+            cardElement.classList.add('flipped');
+            card.isFlipped = true;
+            gameState.flippedCards.push(card);
+            
+            // 检查是否有两张卡片翻开
+            if (gameState.flippedCards.length === 2) {
+                gameState.canFlip = false;
+                checkForMatch();
+            }
+        }
+        // 检查是否匹配
+        function checkForMatch() {
+            const [card1, card2] = gameState.flippedCards;
+            
+            // 如果是一对（一个是词语，一个是图片，且pairId相同）
+            if (card1.pairId === card2.pairId && card1.type !== card2.type) {
+                // 匹配成功
+                setTimeout(() => {
+                    card1.element.classList.add('matched');
+                    card2.element.classList.add('matched');
+                    card1.isMatched = true;
+                    card2.isMatched = true;
+                    
+                    gameState.matchedPairs++;
+                    document.getElementById('matches').textContent = gameState.matchedPairs;
+                    
+                    // 播放匹配成功音效
+                    if (gameConfig.matchSound) {
+                        gameConfig.matchSound.play();
+                    }
+                    
+                    // 播放词语读音
+                    if (gameConfig.wordAudios[card1.pairId]) {
+                        gameConfig.wordAudios[card1.pairId].play();
+                    }
+                    
+                    // 检查游戏是否完成
+                    if (gameState.matchedPairs === gameState.totalPairs) {
+                        setTimeout(() => {
+                            document.getElementById('successMessage').classList.add('show');
+                            if (gameConfig.successSound) {
+                                gameConfig.successSound.play();
+                            }
+                        }, 500);
+                    }
+                    
+                    resetFlippedCards();
+                }, 500);
+            } else {
+                // 不匹配，缓慢翻转回去
+                setTimeout(() => {
+                    card1.element.classList.remove('flipped');
+                    card2.element.classList.remove('flipped');
+                    card1.isFlipped = false;
+                    card2.isFlipped = false;
+                    
+                    resetFlippedCards();
+                }, 1500);
+            }
+        }
+        // 重置翻开的卡片
+        function resetFlippedCards() {
+            gameState.flippedCards = [];
+            gameState.canFlip = true;
+        }
+        // 应用设置
+        document.getElementById('applySettings').addEventListener('click', function() {
+            // 更新词语
+            gameConfig.words[0] = document.getElementById('word1').value || '中秋节';
+            gameConfig.words[1] = document.getElementById('word2').value || '月饼';
+            gameConfig.words[2] = document.getElementById('word3').value || '月亮';
+            
+            // 处理上传的图片
+            const image1 = document.getElementById('image1').files[0];
+            const image2 = document.getElementById('image2').files[0];
+            const image3 = document.getElementById('image3').files[0];
+            
+            if (image1) gameConfig.images[0] = URL.createObjectURL(image1);
+            if (image2) gameConfig.images[1] = URL.createObjectURL(image2);
+            if (image3) gameConfig.images[2] = URL.createObjectURL(image3);
+            
+            // 处理上传的音频
+            const bgMusicFile = document.getElementById('bgMusic').files[0];
+            const successSoundFile = document.getElementById('successSound').files[0];
+            const matchSoundFile = document.getElementById('matchSound').files[0];
+            const wordAudio1File = document.getElementById('wordAudio1').files[0];
+            const wordAudio2File = document.getElementById('wordAudio2').files[0];
+            const wordAudio3File = document.getElementById('wordAudio3').files[0];
+            
+            if (bgMusicFile) {
+                gameConfig.bgMusic = new Audio(URL.createObjectURL(bgMusicFile));
+                gameConfig.bgMusic.loop = true;
+                gameConfig.bgMusic.play().catch(e => console.log("需要用户交互才能播放音频"));
+            }
+            
+            if (successSoundFile) {
+                gameConfig.successSound = new Audio(URL.createObjectURL(successSoundFile));
+            }
+            
+            if (matchSoundFile) {
+                gameConfig.matchSound = new Audio(URL.createObjectURL(matchSoundFile));
+            }
+            
+            if (wordAudio1File) {
+                gameConfig.wordAudios[0] = new Audio(URL.createObjectURL(wordAudio1File));
+            }
+            
+            if (wordAudio2File) {
+                gameConfig.wordAudios[1] = new Audio(URL.createObjectURL(wordAudio2File));
+            }
+            
+            if (wordAudio3File) {
+                gameConfig.wordAudios[2] = new Audio(URL.createObjectURL(wordAudio3File));
+            }
+            
+            // 重新初始化游戏
+            initGame();
+            
+            alert('设置已应用！');
+        });
+        // 重新开始游戏
+        document.getElementById('resetGame').addEventListener('click', function() {
+            document.getElementById('successMessage').classList.remove('show');
+            initGame();
+        });
+        // 初始化游戏
+        window.onload = initGame;
+    </script>
+</body>
+</html>
